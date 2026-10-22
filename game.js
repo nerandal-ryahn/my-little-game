@@ -8,10 +8,10 @@ setGravity(1600);
 
 const SPEED = 280;
 const JUMP = 720;
+const ENEMY_SPEED = 90;
 
 scene("game", () => {
   let score = 0;
-  const totalCoins = 4;
 
   add([
     rect(width(), 48),
@@ -28,6 +28,7 @@ scene("game", () => {
     { x: 680, y: 230, w: 180, h: 28 },
     { x: 420, y: 150, w: 140, h: 28 },
     { x: 80, y: 220, w: 120, h: 28 },
+    { x: 780, y: 400, w: 140, h: 28 },
   ];
 
   for (const p of platforms) {
@@ -46,7 +47,14 @@ scene("game", () => {
     vec2(490, 270),
     vec2(750, 190),
     vec2(470, 110),
+    vec2(140, 180),
+    vec2(320, 456),
+    vec2(560, 456),
+    vec2(830, 360),
+    vec2(880, 456),
   ];
+
+  const totalCoins = coinSpots.length;
 
   for (const spot of coinSpots) {
     add([
@@ -57,6 +65,38 @@ scene("game", () => {
       "coin",
     ]);
   }
+
+  function spawnEnemy(x, y, minX, maxX) {
+    const enemy = add([
+      rect(32, 32),
+      pos(x, y),
+      area(),
+      body(),
+      color(244, 67, 54),
+      "enemy",
+      {
+        dir: 1,
+        minX,
+        maxX,
+      },
+    ]);
+
+    enemy.onUpdate(() => {
+      enemy.move(enemy.dir * ENEMY_SPEED, 0);
+      if (enemy.pos.x <= enemy.minX) {
+        enemy.pos.x = enemy.minX;
+        enemy.dir = 1;
+      } else if (enemy.pos.x >= enemy.maxX) {
+        enemy.pos.x = enemy.maxX;
+        enemy.dir = -1;
+      }
+    });
+  }
+
+  spawnEnemy(280, 440, 240, 520);
+  spawnEnemy(200, 340, 180, 328);
+  spawnEnemy(700, 180, 680, 828);
+  spawnEnemy(800, 350, 780, 888);
 
   const player = add([
     rect(36, 36),
@@ -75,7 +115,7 @@ scene("game", () => {
   ]);
 
   add([
-    text("Arrows / A D to move, Space / W / Up to jump", { size: 16 }),
+    text("Arrows / A D to move, Space / W / Up to jump  |  Avoid red squares", { size: 16 }),
     pos(16, 48),
     color(200, 200, 210),
     fixed(),
@@ -105,9 +145,13 @@ scene("game", () => {
     }
   });
 
+  player.onCollide("enemy", () => {
+    go("lose");
+  });
+
   player.onUpdate(() => {
     if (player.pos.y > height() + 80) {
-      go("game");
+      go("lose");
     }
   });
 });
@@ -122,6 +166,22 @@ scene("win", () => {
   add([
     text("Press Space to play again", { size: 20 }),
     pos(center().add(0, 48)),
+    anchor("center"),
+    color(200, 200, 210),
+  ]);
+  onKeyPress("space", () => go("game"));
+});
+
+scene("lose", () => {
+  add([
+    text("Game Over", { size: 40 }),
+    pos(center()),
+    anchor("center"),
+    color(244, 67, 54),
+  ]);
+  add([
+    text("Hit by an enemy or fell off  |  Press Space to retry", { size: 20 }),
+    pos(center().add(0, 52)),
     anchor("center"),
     color(200, 200, 210),
   ]);
